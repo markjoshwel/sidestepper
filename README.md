@@ -1,13 +1,21 @@
-﻿# sota staircase SideStepper
+# sota staircase SideStepper
 
-a fast .gitignore-respecting large file finder for .git repositories trying to
-weed out large LFS files
+a fast enough .gitignore-respecting large file finder
+
+made for me to find large files in my unity game repositories that wouldn't
+fit github's 100mb limit, for when i'd push my repositories to github for
+schoolwork submission
+
+rewritten from [python](https://forge.joshwel.co/mark/sota/src/branch/main/sidestepper.py)
+to rust, as a reason to learn rust
 
 **this is brain made software**: large language-based code generation has not
-directly used here. but i'd be lying if i said i didn't ask chatgpt if there
-was a better way to check a boolean result lol
+been extensively used here. but i'd be lying if i said i didn't ask chatgpt if
+there was a better way to check a boolean result lol
 
 ## quickstart
+
+**note:** there aren't any releases nor a nix flake yet!
 
 ### installing a binary
 
@@ -24,9 +32,9 @@ was a better way to check a boolean result lol
 ### build it yourself
 
 1. [get rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html#install-rust-and-cargo)
-2. `cargo build release`
+2. run `cargo build release`
 
-**nix users, rejoice:** `nix run github:markjoshwel/sidestepper` or `nix run git+:https://forge.joshwel.co/mark/sidestepper`
+**nix users, rejoice:** run `nix run github:markjoshwel/sidestepper` or `nix run git+:https://forge.joshwel.co/mark/sidestepper`
 
 ### running it
 
@@ -44,7 +52,7 @@ it'll find for a `.git` directory in the current or parent directories, if you
 want to use this not in the context i usually use this for, pass in
 `--search-here` to treat the current working directory as the 'repository root'
 
-it'll then make a `.sotaignore` file that i use in my other tooling,
+it'll then make a `.sotaignore` file that i use in my other tooling scripts,
 but if you want output more friendly for integration in other places,
 pass in `--plumbing` for it to output encountered large files, line-by-line, to
 stdout
