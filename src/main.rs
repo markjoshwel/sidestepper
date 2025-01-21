@@ -19,6 +19,7 @@ use std::error::Error;
 use std::fs::metadata;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use std::time::{Duration, SystemTime};
 use std::{env, fs, io, path};
 
@@ -196,12 +197,12 @@ fn format_elapsed_time(secs: f64) -> String {
 }
 
 fn main() {
-    eprintln!("\nsota staircase SideStepper v5 (i3/a5)");
+    eprintln!("sota staircase SideStepper v5 (i3/a5)");
     let behaviour = {
         let behaviour = cli_get_behaviour();
         // huh. pattern matching consumes the variable, so we ref (&) it. damn.
         if let Err(e) = &behaviour {
-            eprintln!("critical error: {}\n", e);
+            eprintln!("critical error: {}", e);
             std::process::exit(1);
         }
         behaviour.unwrap()
@@ -217,12 +218,10 @@ fn main() {
                 format!(
                     "{} ({})",
                     behaviour.repo_sotaignore_path.to_string_lossy(),
-                    {
-                        if behaviour.repo_sotaignore_path.try_exists().unwrap_or(false) {
-                            "exists"
-                        } else {
-                            "non-existent"
-                        }
+                    match behaviour.repo_sotaignore_path.try_exists() {
+                        Ok(true) => "exists",
+                        Ok(false) => "non-existent",
+                        Err(_) => "unknown",
                     }
                 )
             }
@@ -266,12 +265,13 @@ fn main() {
             eprintln!("skipped")
         }
         Err(e) => {
-            eprintln!("error ({})", e)
+            eprintln!("error: ({})", e);
+            exit(2)
         }
     }
 
     eprintln!(
-        "\n--- done! took {} ″~ ☆*: .｡. o(≧▽≦)o .｡.:*☆ ---\n",
+        "\n--- done! took {} ″~ ☆*: .｡. o(≧▽≦)o .｡.:*☆ ---",
         format_elapsed_time(all.elapsed().unwrap_or(zero_duration).as_secs_f64())
     );
 }
