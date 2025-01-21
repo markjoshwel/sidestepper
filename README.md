@@ -53,9 +53,8 @@ want to use this not in the context i usually use this for, pass in
 `--search-here` to treat the current working directory as the 'repository root'
 
 it'll then make a `.sotaignore` file that i use in my other tooling scripts,
-but if you want output more friendly for integration in other places,
-pass in `--plumbing` for it to output encountered large files, line-by-line, to
-stdout
+but if you want it to output external-tool-friendly output to stdout, pass in
+`--plumbing` for it to output encountered large files, line-by-line, to stdout
 
 ## historical changes
 
