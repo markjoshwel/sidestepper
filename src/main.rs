@@ -14,53 +14,25 @@
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 // IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+use ignore;
 use std::error::Error;
 use std::fs::metadata;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
-use std::{env, fs, io};
+use std::{env, fs, io, path};
 
-use ignore;
-
-// const SOTA_SIDESTEP_CHUNK_SIZE: u16 = 16;
-// const SOTA_SIDESTEP_MAX_WORKERS: u16 = 4;
 const SOTA_SIDESTEP_LARGE_FILE_SIZE: u64 = 100000000; // 100mb
 
 struct Behaviour {
     repo_dir_path: PathBuf,
     repo_sotaignore_path: PathBuf,
-    // parallel: bool,
-    // chunk_size: u16,
-    // max_workers: u16,
     large_file_size: u64,
     plumbing: bool,
 }
 
 fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
     // get environment variables
-    // let parallel: bool = 'get_parallel: {
-    //     // future me move this to a higher block if we ever need args
-    //     // anywhere else also what the hell, labeled blocks?
-    //     // huh -- the community seems wishy-washy on it,
-    //     // but this seems like a harmless use of em
-    //     let args: Vec<String> = env::args().collect();
-    //     if env::var("SOTA_SIDESTEP_PARALLEL").is_ok() {
-    //         break 'get_parallel true;
-    //     }
-    //     if args.iter().any(|arg| arg == "--parallel") {
-    //         break 'get_parallel true;
-    //     }
-    //     false
-    // };
-    // let chunk_size: u16 = match env::var("SOTA_SIDESTEP_CHUNK_SIZE") {
-    //     Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_CHUNK_SIZE),
-    //     Err(_) => SOTA_SIDESTEP_CHUNK_SIZE,
-    // };
-    // let max_workers: u16 = match env::var("SOTA_SIDESTEP_MAX_WORKERS") {
-    //     Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_MAX_WORKERS),
-    //     Err(_) => SOTA_SIDESTEP_MAX_WORKERS,
-    // };
     let large_file_size: u64 = match env::var("SOTA_SIDESTEP_LARGE_FILE_SIZE") {
         Ok(val) => val.parse::<u64>().unwrap_or(SOTA_SIDESTEP_LARGE_FILE_SIZE),
         Err(_) => SOTA_SIDESTEP_LARGE_FILE_SIZE,
@@ -78,13 +50,13 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
         }
     }
 
-    let current_dir = env::current_dir().unwrap();
+    let current_dir = env::current_dir().map_err(|_| "could not get current working directory")?;
 
     // if we're searching here anywas, return early using the current dir
     if search_here {
         return Ok(Behaviour {
             repo_dir_path: PathBuf::from(&current_dir),
-            repo_sotaignore_path: PathBuf::from(current_dir.join(".sotaignore")),
+            repo_sotaignore_path: PathBuf::from(&current_dir.join(".sotaignore")),
             large_file_size,
             plumbing,
         });
@@ -93,50 +65,28 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
     // else, find the repo dir
     // (go through each parent dir until one of them has a .git directory in it)
     let mut dir = current_dir.as_path();
-    let mut possible_repo_dir_path: Option<&Path> = None;
-    while dir.components().count() > 1 {
-        // check if there's a .git directory nearby
-        if dir.join(".git/").try_exists().ok() == Some(true) {
-            possible_repo_dir_path = Option::from(dir);
-            break;
+    let repo_dir_path: PathBuf = loop {
+        if dir.join(".git").try_exists().unwrap_or(false) {
+            break dir.into();
         }
-
-        // iterate down!
         if let Some(parent) = dir.parent() {
             dir = parent;
         } else {
-            break;
+            return Err(
+                "could not find a .git repository in the current or parent directories".into(),
+            );
         }
-    }
-    if possible_repo_dir_path.is_none() {
-        return Err("could not find a .git repository in the current or parent directories".into());
-    }
-    let repo_dir_path = possible_repo_dir_path.unwrap();
+    };
+
     Ok(Behaviour {
-        repo_dir_path: PathBuf::from(repo_dir_path),
-        repo_sotaignore_path: PathBuf::from(repo_dir_path.join(".sotaignore")),
+        repo_dir_path: PathBuf::from(&repo_dir_path),
+        repo_sotaignore_path: PathBuf::from(&repo_dir_path.join(".sotaignore")),
         large_file_size,
         plumbing,
     })
 }
 
 fn ss_scan_for_unignored_files(behaviour: &Behaviour) -> Vec<PathBuf> {
-    // for file in ignore::WalkBuilder::new(&behaviour.repo_dir_path)
-    //     .hidden(false)
-    //     .build()
-    //     .into_iter()
-    //     .filter_map(|e| e.ok())
-    // {
-    //     if file
-    //         .path()
-    //         .starts_with(Path::new(&behaviour.repo_dir_path).join(".git/"))
-    //     {
-    //         continue;
-    //     }
-    //     if file.path().is_file() {
-    //         files.push(file.into_path());
-    //     }
-    // }
     ignore::WalkBuilder::new(&behaviour.repo_dir_path)
         .hidden(false)
         .build()
@@ -152,17 +102,6 @@ fn ss_scan_for_unignored_files(behaviour: &Behaviour) -> Vec<PathBuf> {
 }
 
 fn ss_check_for_large_files(behaviour: &Behaviour, files: &Vec<PathBuf>) -> Vec<PathBuf> {
-    // let mut large_files: Vec<PathBuf> = Vec::new();
-    // for file in files {
-    //     let result = metadata(file);
-    //     if let Err(_) = result {
-    //         continue;
-    //     }
-    //     let metadata = result.unwrap();
-    //     if metadata.len() >= behaviour.large_file_size {
-    //         large_files.push(file.into());
-    //     }
-    // }
     files
         .iter()
         .filter_map(|file| {
@@ -184,12 +123,12 @@ fn ss_write_sotaignore(behaviour: &Behaviour, large_files: &Vec<PathBuf>) -> io:
     if behaviour.plumbing {
         eprintln!();
         for file in large_files {
-            println!("{}", file.to_str().unwrap());
+            println!("{}", file.to_str().unwrap_or("".into()));
         }
         return Ok(true);
     }
 
-    let old_sotaignore = if behaviour.repo_sotaignore_path.try_exists().ok() == Some(true) {
+    let old_sotaignore = if behaviour.repo_sotaignore_path.try_exists().unwrap_or(false) {
         fs::read_to_string(&behaviour.repo_sotaignore_path)?
             .lines()
             .map(String::from)
@@ -201,9 +140,20 @@ fn ss_write_sotaignore(behaviour: &Behaviour, large_files: &Vec<PathBuf>) -> io:
     let mut new_sotaignore = old_sotaignore.clone();
     for file in large_files {
         if let Ok(file_relative) = file.strip_prefix(&behaviour.repo_dir_path) {
-            let relative_path_str = file_relative.to_string_lossy();
+            let fallback = &file.to_string_lossy();
+            let relative_path_str = file_relative
+                .to_str()
+                .unwrap_or(file.to_str().unwrap_or(fallback));
+
+            // posix-path-ify it for cross compatibility
             if !old_sotaignore.contains(&relative_path_str.to_string()) {
-                new_sotaignore.push(relative_path_str.to_string());
+                new_sotaignore.push({
+                    if path::MAIN_SEPARATOR_STR == "\\" {
+                        relative_path_str.to_string().replace("\\", "/")
+                    } else {
+                        relative_path_str.to_string()
+                    }
+                })
             }
         }
     }
@@ -256,18 +206,19 @@ fn main() {
         }
         behaviour.unwrap()
     };
+
     eprintln!(
         "   repo root : {}\n .sotaignore : {}\n",
-        behaviour.repo_dir_path.to_str().unwrap(),
+        behaviour.repo_dir_path.to_string_lossy(),
         {
             if behaviour.plumbing {
                 "(stdout)".into()
             } else {
                 format!(
                     "{} ({})",
-                    behaviour.repo_sotaignore_path.to_str().unwrap(),
+                    behaviour.repo_sotaignore_path.to_string_lossy(),
                     {
-                        if behaviour.repo_sotaignore_path.try_exists().ok() == Some(true) {
+                        if behaviour.repo_sotaignore_path.try_exists().unwrap_or(false) {
                             "exists"
                         } else {
                             "non-existent"
