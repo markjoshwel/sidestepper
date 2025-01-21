@@ -59,7 +59,7 @@ but if you want it to output external-tool-friendly output to stdout, pass in
 
 ## historical changes
 
-- v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt, just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder
+- v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt, just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder)
 - v4 (i2/a4) - optimised single iod-ttt
 - v3 (i2/a3) - faster matching by remembering ignored directories (ignore on demand, 'iod')
 - v2 (i2/a2) - 2nd implementation, corrected ignored directory matching (named 'trytrytry', 'ttt')
