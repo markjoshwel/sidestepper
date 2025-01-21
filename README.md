@@ -15,17 +15,13 @@ there was a better way to check a boolean result lol
 
 ## quickstart
 
-**note:** there aren't any releases nor a nix flake yet!
-
 ### installing a binary
 
-**note:** all non-windows builds are statically linked
-
-- Windows
-- Linux
-- macOS universal
-- macOS amd64
-- macOS aarch64
+- [Windows](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-windows-x86_64.exe)
+- [Linux (static binary, musl)](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-linux-x86_64)
+- [macOS universal](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-universal)
+- [macOS x86_64](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-x86_84)
+- [macOS aarch64](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-aarch64)
 
 (also available in the 'releases' tab wherever this repository is situated in)
 
@@ -34,7 +30,9 @@ there was a better way to check a boolean result lol
 1. [get rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html#install-rust-and-cargo)
 2. run `cargo build release`
 
-**nix users, rejoice:** run `nix run github:markjoshwel/sidestepper` or `nix run git+:https://forge.joshwel.co/mark/sidestepper`
+**nix users, rejoice:** `nix run github:markjoshwel/sidestepper` or
+`git+https://forge.joshwel.co/mark/sidestepper` (or nix build it, or add it to
+your profile, or your system configuration, whatever)
 
 ### running it
 
@@ -59,7 +57,8 @@ but if you want it to output external-tool-friendly output to stdout, pass in
 
 ## historical changes
 
-- v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt, just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder)
+- v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt,
+  just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder)
 - v4 (i2/a4) - optimised single iod-ttt
 - v3 (i2/a3) - faster matching by remembering ignored directories (ignore on demand, 'iod')
 - v2 (i2/a2) - 2nd implementation, corrected ignored directory matching (named 'trytrytry', 'ttt')
