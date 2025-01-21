@@ -49,8 +49,9 @@ or on windows,
 ```
 
 it'll find for a `.git` directory in the current or parent directories, if you
-want to use this not in the context i usually use this for, pass in
-`--search-here` to treat the current working directory as the 'repository root'
+want to use this not in the context i usually use this for (which is for git
+repositories), pass in `--search-here` to treat the current working directory
+as the 'repository root'
 
 it'll then make a `.sotaignore` file that i use in my other tooling scripts,
 but if you want it to output external-tool-friendly output to stdout, pass in
@@ -58,10 +59,10 @@ but if you want it to output external-tool-friendly output to stdout, pass in
 
 ## historical changes
 
-- v5 (i3/a4) - rewritten in rust lol
+- v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt, just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder
 - v4 (i2/a4) - optimised single iod-ttt
 - v3 (i2/a3) - faster matching by remembering ignored directories (ignore on demand, 'iod')
-- v2 (i2/a2) - corrected ignored directory matching (named 'trytrytry')
+- v2 (i2/a2) - 2nd implementation, corrected ignored directory matching (named 'trytrytry', 'ttt')
 - v1 (i1/a1) - original python script, still embedded within ReStepper
 
 ## licence
