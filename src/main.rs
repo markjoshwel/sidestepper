@@ -26,44 +26,70 @@ const SOTA_SIDESTEP_LARGE_FILE_SIZE: u64 = 100000000; // 100mb
 struct Behaviour {
     repo_dir_path: PathBuf,
     repo_sotaignore_path: PathBuf,
-    parallel: bool,
-    chunk_size: u16,
-    max_workers: u16,
+    // parallel: bool,
+    // chunk_size: u16,
+    // max_workers: u16,
     large_file_size: u64,
+    search_here: bool,
+    plumbing: bool,
 }
 
 fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
     // get environment variables
-    let chunk_size: u16 = match env::var("SOTA_SIDESTEP_CHUNK_SIZE") {
-        Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_CHUNK_SIZE),
-        Err(_) => SOTA_SIDESTEP_CHUNK_SIZE,
-    };
-    let max_workers: u16 = match env::var("SOTA_SIDESTEP_MAX_WORKERS") {
-        Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_MAX_WORKERS),
-        Err(_) => SOTA_SIDESTEP_MAX_WORKERS,
-    };
+    // let parallel: bool = 'get_parallel: {
+    //     // future me move this to a higher block if we ever need args
+    //     // anywhere else also what the hell, labeled blocks?
+    //     // huh -- the community seems wishy-washy on it,
+    //     // but this seems like a harmless use of em
+    //     let args: Vec<String> = env::args().collect();
+    //     if env::var("SOTA_SIDESTEP_PARALLEL").is_ok() {
+    //         break 'get_parallel true;
+    //     }
+    //     if args.iter().any(|arg| arg == "--parallel") {
+    //         break 'get_parallel true;
+    //     }
+    //     false
+    // };
+    // let chunk_size: u16 = match env::var("SOTA_SIDESTEP_CHUNK_SIZE") {
+    //     Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_CHUNK_SIZE),
+    //     Err(_) => SOTA_SIDESTEP_CHUNK_SIZE,
+    // };
+    // let max_workers: u16 = match env::var("SOTA_SIDESTEP_MAX_WORKERS") {
+    //     Ok(val) => val.parse::<u16>().unwrap_or(SOTA_SIDESTEP_MAX_WORKERS),
+    //     Err(_) => SOTA_SIDESTEP_MAX_WORKERS,
+    // };
     let large_file_size: u64 = match env::var("SOTA_SIDESTEP_LARGE_FILE_SIZE") {
         Ok(val) => val.parse::<u64>().unwrap_or(SOTA_SIDESTEP_LARGE_FILE_SIZE),
         Err(_) => SOTA_SIDESTEP_LARGE_FILE_SIZE,
     };
-    let parallel: bool = 'get_parallel: {
-        // future me move this to a higher block if we ever need args
-        // anywhere else also what the hell, labeled blocks?
-        // huh -- the community seems wishy-washy on it,
-        // but this seems like a harmless use of em
-        let args: Vec<String> = env::args().collect();
-        if env::var("SOTA_SIDESTEP_PARALLEL").is_ok() {
-            break 'get_parallel true;
-        }
-        if args.iter().any(|arg| arg == "--parallel") {
-            break 'get_parallel true;
-        }
-        false
-    };
 
-    // find repo dir
-    // go through each parent dir until one of them has a .git directory in it
+    // look through args and see if the '--search-here' or '--plumbing' flags are present
+    let mut search_here: bool = false;
+    let mut plumbing: bool = false;
+    for arg in env::args() {
+        if arg == "--search-here" {
+            search_here = true;
+        }
+        if arg == "--plumbing" {
+            plumbing = true;
+        }
+    }
+
     let current_dir = env::current_dir().unwrap();
+
+    // if we're searching here anywas, return early using the current dir
+    if search_here {
+        return Ok(Behaviour {
+            repo_dir_path: PathBuf::from(&current_dir),
+            repo_sotaignore_path: PathBuf::from(current_dir.join(".sotaignore")),
+            large_file_size,
+            search_here,
+            plumbing,
+        });
+    }
+
+    // else, find the repo dir
+    // (go through each parent dir until one of them has a .git directory in it)
     let mut dir = current_dir.as_path();
     let mut possible_repo_dir_path: Option<&Path> = None;
     while dir.components().count() > 1 {
@@ -87,35 +113,42 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
     Ok(Behaviour {
         repo_dir_path: PathBuf::from(repo_dir_path),
         repo_sotaignore_path: PathBuf::from(repo_dir_path.join(".sotaignore")),
-        parallel,
-        chunk_size,
-        max_workers,
         large_file_size,
+        search_here,
+        plumbing,
     })
 }
 
 fn main() {
-    eprintln!("sota staircase SideStepper v5 (i3/a4)");
+    eprintln!("\nsota staircase SideStepper v5 (i3/a4)");
     let behaviour = {
         let behaviour = cli_get_behaviour();
         // huh. pattern matching consumes the variable, so we ref (&) it. damn.
         if let Err(e) = &behaviour {
-            eprintln!("critical error: {}", e);
+            eprintln!("critical error: {}\n", e);
             std::process::exit(1);
         }
         behaviour.unwrap()
     };
     eprintln!(
-        "   repo root : {}\n .sotaignore : {} ({})\n    parallel : {}",
+        "   repo root : {}\n .sotaignore : {}\n",
         behaviour.repo_dir_path.to_str().unwrap(),
-        behaviour.repo_sotaignore_path.to_str().unwrap(),
         {
-            if behaviour.repo_sotaignore_path.try_exists().ok() == Some(true) {
-                "exists"
+            if behaviour.plumbing {
+                "(stdout)".into()
             } else {
-                "non-existent"
+                format!(
+                    "{} ({})",
+                    behaviour.repo_sotaignore_path.to_str().unwrap(),
+                    {
+                        if behaviour.repo_sotaignore_path.try_exists().ok() == Some(true) {
+                            "exists"
+                        } else {
+                            "non-existent"
+                        }
+                    }
+                )
             }
         },
-        behaviour.parallel
     );
 }
