@@ -31,8 +31,8 @@ there was a better way to check a boolean result lol
 2. run `cargo build release`
 
 **nix users, rejoice:** `nix run github:markjoshwel/sidestepper` or
-`git+https://forge.joshwel.co/mark/sidestepper` (or nix build it, or add it to
-your profile, or your system configuration, whatever)
+`git+https://forge.joshwel.co/mark/sidestepper.git` (or nix build it, or add it
+to your profile, or your system configuration, whatever)
 
 ### running it
 
