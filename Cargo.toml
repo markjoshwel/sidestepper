@@ -5,3 +5,9 @@ edition = "2021"
 
 [dependencies]
 ignore = "0.4.23"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+opt-level = "z"
