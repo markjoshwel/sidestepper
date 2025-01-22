@@ -22,7 +22,7 @@
         };
 
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rustc cargo cargo-zigbuild zig ];
+          nativeBuildInputs = with pkgs; [ rustup rustc cargo cargo-zigbuild zig ];
         };
       }
     );
