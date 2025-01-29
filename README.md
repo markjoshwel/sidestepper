@@ -20,7 +20,7 @@ there was a better way to check a boolean result lol
 - [Windows](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-windows-x86_64.exe)
 - [Linux (static binary, musl)](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-linux-x86_64)
 - [macOS universal](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-universal)
-- [macOS x86_64](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-x86_84)
+- [macOS x86_64](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-x86_64)
 - [macOS aarch64](https://forge.joshwel.co/mark/sidestepper/releases/download/latest/sidestepper-macos-aarch64)
 
 (also available in the 'releases' tab wherever this repository is situated in)
@@ -57,6 +57,7 @@ but if you want it to output external-tool-friendly output to stdout, pass in
 
 ## historical changes
 
+- v5 (i3/a6) - fix for a silly bug (not properly checking if a .sotaignore entry already exists before writing it)
 - v5 (i3/a5) - 3rd implementation, rewritten in rust lol (no longer using iod-ttt,
   just piggybacking off [ignore](https://crates.io/crates/ignore)'s WalkBuilder)
 - v4 (i2/a4) - optimised single iod-ttt
