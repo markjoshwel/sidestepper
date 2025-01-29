@@ -1,6 +1,6 @@
 [package]
 name = "sidestepper"
-version = "5.3.5"
+version = "5.3.6"
 edition = "2021"
 
 [dependencies]

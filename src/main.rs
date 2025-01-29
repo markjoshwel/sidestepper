@@ -24,12 +24,16 @@ use std::time::{Duration, SystemTime};
 use std::{env, fs, io, path};
 
 const SOTA_SIDESTEP_LARGE_FILE_SIZE: u64 = 100000000; // 100mb
+const VERSION_OVERALL: u8 = 5;
+const VERSION_IMPLEMENTATION: u8 = 3;
+const VERSION_ALGORITHM: u8 = 6;
 
 struct Behaviour {
     repo_dir_path: PathBuf,
     repo_sotaignore_path: PathBuf,
     large_file_size: u64,
     plumbing: bool,
+    version: bool,
 }
 
 fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
@@ -49,6 +53,15 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
         if arg == "--plumbing" {
             plumbing = true;
         }
+        if arg == "--version" {
+            return Ok(Behaviour {
+                repo_dir_path: PathBuf::new(),
+                repo_sotaignore_path: PathBuf::new(),
+                large_file_size,
+                plumbing,
+                version: true,
+            });
+        }
     }
 
     let current_dir = env::current_dir().map_err(|_| "could not get current working directory")?;
@@ -60,6 +73,7 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
             repo_sotaignore_path: PathBuf::from(&current_dir.join(".sotaignore")),
             large_file_size,
             plumbing,
+            version: false,
         });
     }
 
@@ -84,6 +98,7 @@ fn cli_get_behaviour() -> Result<Behaviour, Box<dyn Error>> {
         repo_sotaignore_path: PathBuf::from(&repo_dir_path.join(".sotaignore")),
         large_file_size,
         plumbing,
+        version: false,
     })
 }
 
@@ -141,20 +156,26 @@ fn ss_write_sotaignore(behaviour: &Behaviour, large_files: &Vec<PathBuf>) -> io:
     let mut new_sotaignore = old_sotaignore.clone();
     for file in large_files {
         if let Ok(file_relative) = file.strip_prefix(&behaviour.repo_dir_path) {
-            let fallback = &file.to_string_lossy();
-            let relative_path_str = file_relative
-                .to_str()
-                .unwrap_or(file.to_str().unwrap_or(fallback));
+            let posix_relative_path_str = {
+                // try:
+                // - valid unicode relative path (may fail)
+                // - valid unicode absolute path (may fail)
+                // - potentially invalid unicode absolute path (always returns)
+                let relative_path_str = file_relative
+                    .to_str()
+                    .unwrap_or(file.to_str().unwrap_or(&file.to_string_lossy()))
+                    .to_string();
 
-            // posix-path-ify it for cross compatibility
-            if !old_sotaignore.contains(&relative_path_str.to_string()) {
-                new_sotaignore.push({
-                    if path::MAIN_SEPARATOR_STR == "\\" {
-                        relative_path_str.to_string().replace("\\", "/")
-                    } else {
-                        relative_path_str.to_string()
-                    }
-                })
+                // posix-path-ify it for cross compatibility
+                if path::MAIN_SEPARATOR_STR == "\\" {
+                    relative_path_str.to_string().replace("\\", "/")
+                } else {
+                    relative_path_str.to_string()
+                }
+            };
+
+            if !old_sotaignore.contains(&posix_relative_path_str) {
+                new_sotaignore.push(posix_relative_path_str)
             }
         }
     }
@@ -197,7 +218,10 @@ fn format_elapsed_time(secs: f64) -> String {
 }
 
 fn main() {
-    eprintln!("sota staircase SideStepper v5 (i3/a5)");
+    eprintln!(
+        "sota staircase SideStepper v{} (i{}/a{})",
+        VERSION_OVERALL, VERSION_IMPLEMENTATION, VERSION_ALGORITHM
+    );
     let behaviour = {
         let behaviour = cli_get_behaviour();
         // huh. pattern matching consumes the variable, so we ref (&) it. damn.
@@ -207,6 +231,15 @@ fn main() {
         }
         behaviour.unwrap()
     };
+
+    // check if we're just printing the version
+    if behaviour.version {
+        println!(
+            "v{}.{}.{}",
+            VERSION_OVERALL, VERSION_IMPLEMENTATION, VERSION_ALGORITHM
+        );
+        exit(0);
+    }
 
     eprintln!(
         "   repo root : {}\n .sotaignore : {}\n",
